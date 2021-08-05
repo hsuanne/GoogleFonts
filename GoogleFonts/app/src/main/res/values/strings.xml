@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">GoogleFonts</string>
+    <string name="request_failed">Font request failed with reason code: %1$d</string>
+</resources>
