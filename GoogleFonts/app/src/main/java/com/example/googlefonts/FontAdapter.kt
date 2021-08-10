@@ -7,7 +7,6 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
-import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -29,7 +28,6 @@ import java.util.*
 class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
     ListAdapter<String, RecyclerView.ViewHolder>(DiffCallback()) {
     private lateinit var mHandler: Handler
-    private lateinit var tf: Typeface
 
     inner class StrViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textView: TextView = view.findViewById(R.id.str_container_textview)
@@ -44,6 +42,7 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        var tf: Typeface = Typeface.DEFAULT
         when (holder) {
             is StrViewHolder -> {
                 val str = getItem(position)
@@ -51,8 +50,11 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
 
                 holder.apply {
                     textView.text = str
-
                     cardView.setOnClickListener {
+                        println(str)
+                        viewModel.currentTypeFace.value = tf
+                    }
+
                         if (isOnline(activity)) {
                             val handlerThread = HandlerThread("fonts")
                             handlerThread.start()
@@ -67,10 +69,12 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
 
                             val callback = object : FontsContractCompat.FontRequestCallback() {
                                 override fun onTypefaceRetrieved(typeface: Typeface) {
-                                    viewModel.currentTypeFace.value = typeface
+                                    tf = typeface
+                                    textView.typeface = tf
                                 }
 
                                 override fun onTypefaceRequestFailed(reason: Int) {
+                                    Log.i("onTypefaceRequestFailed", "Failed reason: $reason")
                                     Toast.makeText(
                                         itemView.context,
                                         "Failed reason: $reason",
@@ -87,15 +91,15 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
                                 try {
                                     Typeface.createFromAsset(activity.assets, "$lowerStr.ttf")
                                 } catch (e: Exception) {
-                                    Toast.makeText(
-                                        itemView.context,
-                                        "error: $e",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Log.e("No Internet Connection", "error: $e")
+//                                    Toast.makeText(
+//                                        itemView.context,
+//                                        "error: $e",
+//                                        Toast.LENGTH_SHORT
+//                                    ).show()
                                     Typeface.createFromAsset(activity.assets, "abeezee.ttf")
                                 }
                         }
-                    }
                 }
             }
         }

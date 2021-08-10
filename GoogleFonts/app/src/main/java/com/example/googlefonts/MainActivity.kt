@@ -10,10 +10,12 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
+import com.example.googlefonts.databinding.ActivityMainBinding
 import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityMainBinding
     private lateinit var textPreview:TextView
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: FontAdapter
@@ -21,12 +23,13 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val fontViewModel = ViewModelProvider(this).get(FontViewModel::class.java)
 
-        textPreview = findViewById(R.id.text_preview)
-        recyclerView = findViewById(R.id.recyclerview)
+        textPreview = binding.textPreview
+        recyclerView = binding.recyclerview
         adapter = FontAdapter(fontViewModel, this)
         recyclerView.adapter = adapter
 
@@ -42,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 
         fontViewModel.currentTypeFace.observe(this){
             textPreview.typeface = it
+            println("currentTypeFace")
         }
     }
 }
