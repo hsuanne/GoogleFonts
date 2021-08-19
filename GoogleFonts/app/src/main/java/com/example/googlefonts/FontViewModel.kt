@@ -1,6 +1,12 @@
 package com.example.googlefonts
 
+import android.content.Context
 import android.graphics.Typeface
+import android.os.Handler
+import android.os.HandlerThread
+import android.util.Log
+import androidx.core.provider.FontRequest
+import androidx.core.provider.FontsContractCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,9 +23,11 @@ const val KEY = "AIzaSyDibhZWtnHZqR5nSz54Bk9s10j9pTQgBnA"
 
 
 class FontViewModel : ViewModel() {
-    var fontList = MutableLiveData<List<String>>()
+    var fontList = MutableLiveData<List<String>?>()
     val itemList = mutableListOf<String>()
     var currentTypeFace = MutableLiveData<Typeface>()
+    var isLoading = MutableLiveData<Boolean>()
+    val fontRepository = FontRepository_Impl()
 
     init {
         if (itemList.isEmpty()) {
@@ -30,48 +38,40 @@ class FontViewModel : ViewModel() {
     private fun fetchFontList() {
         CoroutineScope(Dispatchers.IO).launch {
             viewModelScope.launch {
-                val fetchList = fetchJson()
-                fontList.value = fetchList
+                fontList.value = fontRepository.fetchFont()
             }.join()
         }
     }
 
-    suspend fun fetchJson(): MutableList<String> {
-        println("Attempting to Fetch fonts")
+    fun getFont(context:Context, str:String){
+        isLoading.value = true
+        val handlerThread = HandlerThread("fonts")
+        handlerThread.start()
+        val mHandler = Handler(handlerThread.looper)
 
-        val url = "https://www.googleapis.com/webfonts/v1/webfonts?key=$KEY"
-        val request = Request.Builder().url(url).build()
+        val request = FontRequest(
+            "com.google.android.gms.fonts",
+            "com.google.android.gms",
+            str,
+            R.array.com_google_android_gms_fonts_certs
+        )
 
-        val client = OkHttpClient()
-        val call = client.newCall(request)
-        //requestCall: 非同步
-        return suspendCancellableCoroutine {
-            call.enqueue(object : Callback { //callback:做完之後再回傳結果
-                override fun onFailure(call: Call, e: IOException) {
-                    println("Failed to execute Request")
-                }
+        val callback = object : FontsContractCompat.FontRequestCallback() {
+            override fun onTypefaceRetrieved(typeface: Typeface) {
+                currentTypeFace.value = typeface
+                isLoading.value = false
+            }
 
-                override fun onResponse(call: Call, response: Response) {
-                    if (response.isSuccessful) {
-                        val body = response.body?.string()
-
-                        val gson = GsonBuilder().create()
-                        val result =
-                            gson.fromJson<FontInfo>(body, object : TypeToken<FontInfo>() {}.type)
-                        println("result_kind: " + result.kind)
-                        println("result_items: " + result.items.size)
-                        for (item in result.items) {
-                            itemList.add(item.family)
-                        }
-                        it.resumeWith(Result.success(itemList))
-                    } else {
-                        println("server problem")
-                    }
-                }
-            })
-            it.invokeOnCancellation { //連不到的話就取消
-                call.cancel()
+            override fun onTypefaceRequestFailed(reason: Int) {
+                Log.i("onTypefaceRequestFailed", "Failed reason: $reason")
+//                                    Toast.makeText(
+//                                        itemView.context,
+//                                        "Failed reason: $reason",
+//                                        Toast.LENGTH_SHORT
+//                                    ).show()
             }
         }
+        FontsContractCompat
+            .requestFont(context, request, callback, mHandler)
     }
 }

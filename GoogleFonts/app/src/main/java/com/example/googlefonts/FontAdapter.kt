@@ -42,7 +42,6 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
 
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        var tf: Typeface = Typeface.DEFAULT
         when (holder) {
             is StrViewHolder -> {
                 val str = getItem(position)
@@ -52,38 +51,8 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
                     textView.text = str
                     cardView.setOnClickListener {
                         println(str)
-                        viewModel.currentTypeFace.value = tf
-                    }
-
                         if (isOnline(activity)) {
-                            val handlerThread = HandlerThread("fonts")
-                            handlerThread.start()
-                            mHandler = Handler(handlerThread.looper)
-
-                            val request = FontRequest(
-                                "com.google.android.gms.fonts",
-                                "com.google.android.gms",
-                                str,
-                                R.array.com_google_android_gms_fonts_certs
-                            )
-
-                            val callback = object : FontsContractCompat.FontRequestCallback() {
-                                override fun onTypefaceRetrieved(typeface: Typeface) {
-                                    tf = typeface
-                                    textView.typeface = tf
-                                }
-
-                                override fun onTypefaceRequestFailed(reason: Int) {
-                                    Log.i("onTypefaceRequestFailed", "Failed reason: $reason")
-                                    Toast.makeText(
-                                        itemView.context,
-                                        "Failed reason: $reason",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                            FontsContractCompat
-                                .requestFont(itemView.context, request, callback, mHandler)
+                            viewModel.getFont(itemView.context,str)
                         } else {
                             println(str)
                             val lowerStr = str.replace(" ", "_").toLowerCase(Locale.ROOT)
@@ -100,6 +69,7 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
                                     Typeface.createFromAsset(activity.assets, "abeezee.ttf")
                                 }
                         }
+                    }
                 }
             }
         }
@@ -116,13 +86,22 @@ class DiffCallback : DiffUtil.ItemCallback<String>() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.M)
+
 fun isOnline(context: Context): Boolean {
     val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     if (connectivityManager != null) {
         val capabilities =
-            connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+                } else {
+                    TODO("VERSION.SDK_INT < M")
+                }
+            } else {
+                TODO("VERSION.SDK_INT < LOLLIPOP")
+                //use version_M以下的語法
+            }
         if (capabilities != null) {
             if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
                 Log.i("Internet", "NetworkCapabilities.TRANSPORT_CELLULAR")

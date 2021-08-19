@@ -5,6 +5,8 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
+import android.view.View
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
@@ -17,6 +19,7 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var textPreview:TextView
+    private lateinit var progressBar: ProgressBar
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: FontAdapter
 
@@ -30,6 +33,7 @@ class MainActivity : AppCompatActivity() {
 
         textPreview = binding.textPreview
         recyclerView = binding.recyclerview
+        progressBar = binding.progressBar
         adapter = FontAdapter(fontViewModel, this)
         recyclerView.adapter = adapter
 
@@ -46,6 +50,14 @@ class MainActivity : AppCompatActivity() {
         fontViewModel.currentTypeFace.observe(this){
             textPreview.typeface = it
             println("currentTypeFace")
+        }
+
+        fontViewModel.isLoading.observe(this){
+            if (it){
+                progressBar.visibility = View.VISIBLE
+            } else {
+                progressBar.visibility = View.INVISIBLE
+            }
         }
     }
 }
