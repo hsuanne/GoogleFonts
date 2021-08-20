@@ -27,7 +27,6 @@ import java.util.*
 
 class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
     ListAdapter<String, RecyclerView.ViewHolder>(DiffCallback()) {
-    private lateinit var mHandler: Handler
 
     inner class StrViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val textView: TextView = view.findViewById(R.id.str_container_textview)
@@ -50,22 +49,15 @@ class FontAdapter(var viewModel: FontViewModel, var activity: MainActivity) :
                 holder.apply {
                     textView.text = str
                     cardView.setOnClickListener {
-                        println(str)
                         if (isOnline(activity)) {
                             viewModel.getFont(itemView.context,str)
                         } else {
-                            println(str)
                             val lowerStr = str.replace(" ", "_").toLowerCase(Locale.ROOT)
                             viewModel.currentTypeFace.value =
                                 try {
                                     Typeface.createFromAsset(activity.assets, "$lowerStr.ttf")
                                 } catch (e: Exception) {
                                     Log.e("No Internet Connection", "error: $e")
-//                                    Toast.makeText(
-//                                        itemView.context,
-//                                        "error: $e",
-//                                        Toast.LENGTH_SHORT
-//                                    ).show()
                                     Typeface.createFromAsset(activity.assets, "abeezee.ttf")
                                 }
                         }
@@ -91,29 +83,36 @@ fun isOnline(context: Context): Boolean {
     val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     if (connectivityManager != null) {
-        val capabilities =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+                    val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+                    if (capabilities != null) {
+                        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                            Log.i("Internet", "NetworkCapabilities.TRANSPORT_CELLULAR")
+                            return true
+                        } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                            Log.i("Internet", "NetworkCapabilities.TRANSPORT_WIFI")
+                            return true
+                        } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
+                            Log.i("Internet", "NetworkCapabilities.TRANSPORT_ETHERNET")
+                            return true
+                        }
+                    }
                 } else {
-                    TODO("VERSION.SDK_INT < M")
+                    val info = connectivityManager.activeNetworkInfo
+                    if (info!=null && info.isConnected) {
+                        if (connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)!!.isConnected){
+                            Log.i("Internet", "NetworkCapabilities.TRANSPORT_WIFI")
+                            return true
+                        } else if (connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE)!!.isConnected){
+                            Log.i("Internet", "NetworkCapabilities.TRANSPORT_CELLULAR")
+                            return true
+                        } else if (connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_ETHERNET)!!.isConnected){
+                            Log.i("Internet", "NetworkCapabilities.TRANSPORT_ETHERNET")
+                            return true
+                        }
+                    }
                 }
-            } else {
-                TODO("VERSION.SDK_INT < LOLLIPOP")
-                //use version_M以下的語法
-            }
-        if (capabilities != null) {
-            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-                Log.i("Internet", "NetworkCapabilities.TRANSPORT_CELLULAR")
-                return true
-            } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                Log.i("Internet", "NetworkCapabilities.TRANSPORT_WIFI")
-                return true
-            } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
-                Log.i("Internet", "NetworkCapabilities.TRANSPORT_ETHERNET")
-                return true
-            }
-        }
     }
     return false
 }

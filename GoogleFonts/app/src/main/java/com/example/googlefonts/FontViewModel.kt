@@ -23,10 +23,10 @@ const val KEY = "AIzaSyDibhZWtnHZqR5nSz54Bk9s10j9pTQgBnA"
 
 
 class FontViewModel : ViewModel() {
-    var fontList = MutableLiveData<List<String>?>()
+    val fontList = MutableLiveData<List<String>?>()
     val itemList = mutableListOf<String>()
-    var currentTypeFace = MutableLiveData<Typeface>()
-    var isLoading = MutableLiveData<Boolean>()
+    val currentTypeFace = MutableLiveData<Typeface>()
+    val isLoading = MutableLiveData<Boolean>()
     val fontRepository = FontRepository_Impl()
 
     init {
